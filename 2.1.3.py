@@ -9,7 +9,11 @@ from openpyxl.styles import Border, Side, Font
 from jinja2 import Environment, FileSystemLoader
 from prettytable import PrettyTable
 
+<<<<<<< HEAD
 choice = input("Enter Vacancies/Statistics: ")
+=======
+choice = input("Inserisci Lavori / Statistiche: ")
+>>>>>>> 13f5a11cd16f794ef733872c146b7b51bbb2d49d
 name = input("Введите название файла: ") 
 profession = input("Введите название профессии: ")
 
