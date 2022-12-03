@@ -10,12 +10,12 @@ from jinja2 import Environment, FileSystemLoader
 from prettytable import PrettyTable
 
 <<<<<<< HEAD
-choice = input("Введите Вакансии/Статистику: ")
-||||||| 13f5a11
-choice = input("Inserisci Lavori / Statistiche: ")
-=======
+choice = input("Enter Vacancies/Statistics: ")
+||||||| ad746f2
 choice = input("输入空缺/统计数字: ")
->>>>>>> ad746f258dbf8fc2fe0a339dd80f6640b0617c83
+=======
+choice = input("Введите Вакансии/Статистику: ")
+>>>>>>> 2344e9e949683c2406e4325f05026c18d26cc4e0
 name = input("Введите название файла: ") 
 profession = input("Введите название профессии: ")
 
