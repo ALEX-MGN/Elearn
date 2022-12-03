@@ -721,22 +721,23 @@ class Report:
         readyHtmlTable += "</tr></table>"
         return readyHtmlTable
 
-doctest.testmod()
-choice = input("Введите Вакансии/Статистика: ")
-name = input("Введите название файла: ") 
-profession = input("Введите название профессии: ")
+if __name__ == "__main__":
+    doctest.testmod()
+    choice = input("Введите Вакансии/Статистика: ")
+    name = input("Введите название файла: ")
+    profession = input("Введите название профессии: ")
 
-if (choice == "Вакансии"):
-    filterVacansie = input("Введите параметр фильтрации: ").split(": ")
-    sortingParameter = input("Введите параметр сортировки: ")
-    reverseOrder = input("Обратный порядок сортировки (Да / Нет): ") 
-    lines = input("Введите диапазон вывода: ").split()
-    column = input("Введите требуемые столбцы: ").split(", ")
+    if (choice == "Вакансии"):
+        filterVacansie = input("Введите параметр фильтрации: ").split(": ")
+        sortingParameter = input("Введите параметр сортировки: ")
+        reverseOrder = input("Обратный порядок сортировки (Да / Нет): ")
+        lines = input("Введите диапазон вывода: ").split()
+        column = input("Введите требуемые столбцы: ").split(", ")
 
-"""Итоговый вывод в зависимости от выбора"""
-if(choice == "Статистика"):  
-    printer = DataSet(name, profession)
-    printer.readyPrint()
-if(choice == "Вакансии"):
-    printer = InputConnect()
-    printer.readyPrint()
+    """Итоговый вывод в зависимости от выбора"""
+    if(choice == "Статистика"):
+        printer = DataSet(name, profession)
+        printer.readyPrint()
+    if(choice == "Вакансии"):
+        printer = InputConnect()
+        printer.readyPrint()
