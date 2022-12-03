@@ -204,6 +204,8 @@ class DataSet:
         Returns:
             str: Строка без HTML тегов
         
+        >>> DataSet.readystr("<p>Hi</p>")
+        'Hi'
         >>> DataSet.readystr("<html><head></head><p>Hi</p><body></body></html>")
         'Hi'
         """
