@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pdfkit
 import doctest
+import cProfile
+from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.styles import Border, Side, Font
 from jinja2 import Environment, FileSystemLoader
@@ -365,7 +367,7 @@ class DataSet:
         self.dictionary_vacancy_rate_city = dict(sorted(filter(lambda x: self.allDictionary.dictionary_vacancy_rate_city[x[0]] >= 0.01, self.allDictionary.dictionary_vacancy_rate_city.items()), key=lambda item: item[1], reverse=True)[:10])
         self.report.dictionary_vacancy_rate_city = self.dictionary_vacancy_rate_city
         print(self.dictionary_vacancy_rate_city)
-        self.report.generate_pdf()
+        self.report.generate_pdf(profession)
         self.report.generate_graphics()
         self.report.generate_excel()
 
@@ -379,6 +381,19 @@ class InputConnect:
     def __init__(self):
         """Иницилизирует объект InputConnect"""
         self.data = DataSet()
+
+    """Преобразование даты в нужный формат"""
+    """def testDateTimeOne(self,published_at):
+        return published_at[0].split("T")[0].split("-")[2] + "." + published_at[0].split("T")[0].split("-")[1] + "." + published_at[0].split("T")[0].split("-")[0]"""
+    def testDateTimeTwo(self,published_at):
+        date = published_at[0].replace("T","").replace("-","").replace(":","").replace("+","")[0:8] 
+        return date[6:8] + "." + date[4:6] + "." + date[0:4]
+    """def testDateTimeThree(self,published_at):
+        date = datetime.strptime(published_at[0].replace("+",".").replace("T"," "), '%Y-%m-%d %H:%M:%S.%f')
+        return ("0" + str(date.day))[-2:] + "." + str(date.month) + "." + str(date.year)
+    def testDateTimeFour(self,published_at):
+        date = str(datetime.date(datetime.strptime(published_at[0].replace("+",".").replace("T"," "), '%Y-%m-%d %H:%M:%S.%f')))
+        return date[-2:] + "." + date[5:7] + "." + date[0:4]"""
 
     def filterVacancies(self, vacancy, filterVacansie):
         """Фильтрация вакансий в таблице
@@ -399,13 +414,13 @@ class InputConnect:
             information = filterVacansie[1]
             if(article == "key_skills" and set(str(information).split(", ")).issubset(set(vacancy.key_skills))):
                 return vacancy
-            if(article == "currency" and "Идентификатор" not in filterVacansie[0] and int(float(vacancy.salary.salary_from)) <= int(information) <= int(float(vacancy.salary.salary_to))):
+            if(article == "currency" and "Идентификатор" not in filterVacansie[0] and int(float(vacancy.salary.salary_from[0])) <= int(information) <= int(float(vacancy.salary.salary_to[0]))):
                 return vacancy
             if(article == "currency" and information == str(vacancy.salary.salary).split("(")[1].split(")")[0]):
                 return vacancy
             if(article != "currency" and getattr(vacancy,article) == information):
                 return vacancy
-            if(article == "published_at" and vacancy.published_at.split("T")[0].split("-")[2] + "." + vacancy.published_at.split("T")[0].split("-")[1] + "." + vacancy.published_at.split("T")[0].split("-")[0] == information):
+            if(article == "published_at" and self.testDateTimeTwo(vacancy.published_at) == information):
                 return vacancy
             return {}
         return vacancy
@@ -473,7 +488,6 @@ class InputConnect:
                 table.add_row(val)
             else:
                 number -= 1
-            print(vacancy.name)
         if(number == 0):
             print("Ничего не найдено")
         else:
