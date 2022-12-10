@@ -3,7 +3,6 @@ dictVithVacancies = {}
 def main():
     def write_chunk(part, lines):
         with open('newCSV//data_part_'+ str(part) +'.csv', 'w', encoding="utf-8-sig") as f_out:
-            f_out.write(names)
             f_out.writelines(lines)
             f_out.close()
     
@@ -14,7 +13,7 @@ def main():
             if(year in dictVithVacancies.keys()):
                 dictVithVacancies[year].append(string)
             else: 
-                dictVithVacancies[year] = list(names)
+                dictVithVacancies[year] = [names, string]
 
         if len(dictVithVacancies) > 0:
             for vacancie in dictVithVacancies:
