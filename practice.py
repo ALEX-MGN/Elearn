@@ -6,6 +6,8 @@ import numpy as np
 import pdfkit
 import doctest
 import cProfile
+import multiprocessing
+import concurrent.futures
 from os import walk
 from datetime import datetime
 from openpyxl import Workbook
@@ -83,7 +85,6 @@ fieldWorkExperience = {
 
 class AllDictionary:
     """Класс со всеми нужными словарями для вывода статистики
-
     Attributes:
         dictionary_salary_levels (dict): Динамика уровня зарплат по годам
         dictionary_number_vacancies (dict): Динамика количества вакансий по годам
@@ -114,7 +115,6 @@ class Salary:
     """
     def __init__(self, salary_from, salary_to, salary_gross, salary_currency):
         """Иницилизирует объект Salary, переделывает все переменные,кроме salary в массив из одного элемента
-
         Args:
             salary_from (str): Минимальное значение зарплаты
             salary_to (str): Максимальное значение зарплаты
@@ -139,7 +139,6 @@ class Vacancy:
     
     Attributes:
         name (arr): Название профессии
-        mysalary (float): Переведенная в рубли сумма зарплат
         area_name (arr): Компания, предоставляющая вакансию
         published_at (arr): Время публикации вакансии
         description (arr): Описание вакансии
@@ -151,7 +150,7 @@ class Vacancy:
         elements (arr): Все значение в одной переменной
     """
     def __init__(self, name, area_name, published_at, description, key_skills, experience_id, premium, employer_name, salary):
-        """Иницилизирует объект Vacancy, переделывает все переменные,кроме salary и mysalary в массив из одного элемента
+        """Иницилизирует объект Vacancy, переделывает все переменные,кроме salary в массив из одного элемента
         
         Args:
             name (str): Название профессии
@@ -163,16 +162,12 @@ class Vacancy:
             premium (str): Премиум или нет вакансия
             employer_name (str): Название региона
             salary (str): Класс Зарплаты
-
-        >>> Vacancy("Программист", "Компас-Плюс", "22.11.2022", "Описание", "Программирование", "between3And6", "Yes", "Новосибирск", Salary(10000, 20000.0, "Yes", 'RUR')).mysalary
-        15000
         >>> Vacancy("Программист", "Компас-Плюс", "22.11.2022", "Описание", "Программирование", "between3And6", "Yes", "Новосибирск", Salary(10000, 20000.0, "Yes", 'RUR')).name
         ['Программист']
         >>> type(Vacancy("Программист", "Компас-Плюс", "22.11.2022", "Описание", "Программирование", "between3And6", "Yes", "Новосибирск", Salary(10000, 20000.0, "Yes", 'RUR'))).__name__
         'Vacancy'
         """
         self.name = [name]
-        self.mysalary = int(currency_to_rub[salary.salary_currency[0]] * (float(salary.salary_from[0]) + float(salary.salary_to[0])) / 2) 
         self.area_name = [area_name] 
         self.published_at = [published_at]
         self.description = [description]
@@ -219,7 +214,6 @@ class DataSet:
         
         Args:
             file_name (str): Название файла с профессиями по годам
-
         Returns:
             list: Возвращает список из 6 элементов: Год, количество всех вакансий, сумму зарплат всех вакансий, количество нужных вакансий, сумму зарплат нужных вакансий, все вакансии
         """
@@ -276,7 +270,6 @@ class DataSet:
         
         Args:
             everyYear (dict): Словарь с ключом - год, а значение - список всех вакансий
-
         Returns:
             list: Возвращает список из 6 элементов: Год, количество всех вакансий, сумму зарплат всех вакансий, количество нужных вакансий, сумму зарплат нужных вакансий, все вакансии
         """
@@ -285,10 +278,10 @@ class DataSet:
         countAverageSalaryForProfession = 0
         sumAverageSalaryForProfession = 0
         for vacancie in list(everyYear.values())[0]:
-            sumAverageSalary += vacancie.mysalary
+            sumAverageSalary += int(currency_to_rub[vacancie.salary.salary_currency[0]] * (float(vacancie.salary.salary_from[0]) + float(vacancie.salary.salary_to[0])) / 2) 
             if(self.profession_name in vacancie.name[0]):
                 countAverageSalaryForProfession += 1
-                sumAverageSalaryForProfession += vacancie.mysalary   
+                sumAverageSalaryForProfession += int(currency_to_rub[vacancie.salary.salary_currency[0]] * (float(vacancie.salary.salary_from[0]) + float(vacancie.salary.salary_to[0])) / 2) 
         return [list(everyYear.keys())[0],len(list(everyYear.values())[0]), sumAverageSalary, countAverageSalaryForProfession, sumAverageSalaryForProfession, list(everyYear.values())[0]]    
     
     def calculating_average_salary(self):
@@ -340,28 +333,28 @@ class DataSet:
             #заполнения словаря с средней зарплатой по городам
             if (vacancie.area_name[0] in self.allDictionary.dictionary_level_salaries_cities.keys()):
                 count = int(self.allDictionary.dictionary_level_salaries_cities[vacancie.area_name[0]].split(" ")[0]) + 1
-                money = int(self.allDictionary.dictionary_level_salaries_cities[vacancie.area_name[0]].split(" ")[1]) + vacancie.mysalary
+                money = int(self.allDictionary.dictionary_level_salaries_cities[vacancie.area_name[0]].split(" ")[1]) + int(currency_to_rub[vacancie.salary.salary_currency[0]] * (float(vacancie.salary.salary_from[0]) + float(vacancie.salary.salary_to[0])) / 2) 
                 self.allDictionary.dictionary_level_salaries_cities[vacancie.area_name[0]] = str(count) + " " + str(money)  
             else:
-                self.allDictionary.dictionary_level_salaries_cities[vacancie.area_name[0]] = "1" + " " + str(vacancie.mysalary)
+                self.allDictionary.dictionary_level_salaries_cities[vacancie.area_name[0]] = "1" + " " + str(int(currency_to_rub[vacancie.salary.salary_currency[0]] * (float(vacancie.salary.salary_from[0]) + float(vacancie.salary.salary_to[0])) / 2) )
             #заполнения словаря: доля ваканский каждого города относительно всех вакансий
             if (vacancie.area_name[0] in self.allDictionary.dictionary_vacancy_rate_city.keys()):
                 self.allDictionary.dictionary_vacancy_rate_city[vacancie.area_name[0]] += 1
             else:
                 self.allDictionary.dictionary_vacancy_rate_city[vacancie.area_name[0]] = 1
         self.calculating_average_salary()
-        
+
         print("Динамика уровня зарплат по годам: ",end="")
-        self.report.dictionary_salary_levels = self.allDictionary.dictionary_salary_levels
+        self.report.dictionary_salary_levels = self.allDictionary.dictionary_salary_levels = dict(sorted(self.allDictionary.dictionary_salary_levels.items(), key=lambda x: x[0]))
         print(self.allDictionary.dictionary_salary_levels)
         print("Динамика количества вакансий по годам: ",end="")
-        self.report.dictionary_number_vacancies = self.allDictionary.dictionary_number_vacancies
+        self.report.dictionary_number_vacancies = self.allDictionary.dictionary_number_vacancies = dict(sorted(self.allDictionary.dictionary_number_vacancies.items(), key=lambda x: x[0]))
         print(self.allDictionary.dictionary_number_vacancies)
         print("Динамика уровня зарплат по годам для выбранной профессии: ",end="")
-        self.report.dictionary_salary_levels_profession = self.allDictionary.dictionary_salary_levels_profession
+        self.report.dictionary_salary_levels_profession = self.allDictionary.dictionary_salary_levels_profession = dict(sorted(self.allDictionary.dictionary_salary_levels_profession.items(), key=lambda x: x[0]))
         print(self.allDictionary.dictionary_salary_levels_profession)
         print("Динамика количества вакансий по годам для выбранной профессии: ",end="")
-        self.report.dictionary_number_vacancies_profession = self.allDictionary.dictionary_number_vacancies_profession
+        self.report.dictionary_number_vacancies_profession = self.allDictionary.dictionary_number_vacancies_profession = dict(sorted(self.allDictionary.dictionary_number_vacancies_profession.items(), key=lambda x: x[0]))
         print(self.allDictionary.dictionary_number_vacancies_profession)  
         print("Уровень зарплат по городам (в порядке убывания): ",end="")
         self.dictionary_level_salaries_cities = dict(sorted(filter(lambda x: self.allDictionary.dictionary_vacancy_rate_city[x[0]] >= 0.01, self.allDictionary.dictionary_level_salaries_cities.items()), key=lambda item: item[1], reverse=True)[:10])
@@ -378,15 +371,16 @@ class DataSet:
 
     def runningFunctionsInMultiThread(self, fileNames):
         """Функция запускает другие функции в многопотоке
-
         Args:
             fileNames (list): Список с названиями всех файлов csv
-
         Returns:
             listWithSumSalaryAndCount (list): Cписок из 6 элементов: Год, количество всех вакансий, сумму зарплат всех вакансий, количество нужных вакансий, сумму зарплат нужных вакансий, все вакансии
         """
-        pool = multiprocessing.Pool(multiprocessing.cpu_count() - 1)
-        listWithSumSalaryAndCount = pool.map(self.csv_ﬁlerAndReader, fileNames)
+        listWithSumSalaryAndCount = []
+        with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
+            futures = {executor.submit(self.csv_ﬁlerAndReader, fileName): fileName for fileName in fileNames}
+            for fut in concurrent.futures.as_completed(futures):
+                listWithSumSalaryAndCount.append(fut.result())
         return listWithSumSalaryAndCount
 
 class InputConnect:
@@ -417,7 +411,6 @@ class InputConnect:
         
         Args:
             vacancy (class): Класс со всеми вакансиями
-
         Returns:
             list: возвращает вакансию, если она подходит, пустоту-если нет
             
@@ -447,7 +440,6 @@ class InputConnect:
         
         Args:
             data_vacancies (list): Список со всеми вакансиями
-
         Returns:
             list: возвращет список с отсортированными вакансиями
         """
@@ -619,7 +611,6 @@ class Report:
 
     def set_bold(self, ws, cell_range):
         """Делает жирный шрифт в шапке таблицы
-
         Args:
             ws (worksheet): рабочая страница в Excel 
             cell_range (str): строка, в которой переданы ячейки, которые нудно изменить    
