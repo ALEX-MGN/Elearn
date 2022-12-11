@@ -9,7 +9,7 @@ import cProfile
 from os import walk
 from datetime import datetime
 from openpyxl import Workbook
-from multiprocessing import Pool
+import multiprocessing
 from prettytable import PrettyTable
 from openpyxl.styles import Border, Side, Font
 from jinja2 import Environment, FileSystemLoader
@@ -215,13 +215,13 @@ class DataSet:
     
     def csv_ﬁlerAndReader(self, file_name):
         """Считывает файл, все ваканскии каждого года помещает в перенную investment, а все поля для этих ваканский в переменную names,
-        также заполняяет вакансию с 9 полями(параметрами вакансии)
+        также заполняяет вакансию с 9 полями(параметрами вакансии), вызывает функцию countsNumberAndSalary, которая считает данные для статистики
         
         Args:
             file_name (str): Название файла с профессиями по годам
 
         Returns:
-            dict: Словарь с ключом - год, а значение - список всех вакансий
+            list: Возвращает список из 6 элементов: Год, количество всех вакансий, сумму зарплат всех вакансий, количество нужных вакансий, сумму зарплат нужных вакансий, все вакансии
         """
         names = []
         investment = []
@@ -267,7 +267,8 @@ class DataSet:
                         array[namesIndex.index(names[item])] = arrayWithoutTegs
                 vacancy = Vacancy(*array)
                 vacancies_objects.append(vacancy)
-            return {vacancy.published_at[0][0:4]:vacancies_objects}
+            listWithSumSalaryAndCount = self.countsNumberAndSalary({vacancy.published_at[0][0:4]:vacancies_objects})
+            return listWithSumSalaryAndCount
 
     def countsNumberAndSalary(self, everyYear):
         """Функция считает количество ваканский в каждом году, сумму всех зарплат, количество ваканский(которую просят) в каждом году,
@@ -384,11 +385,9 @@ class DataSet:
         Returns:
             listWithSumSalaryAndCount (list): Cписок из 6 элементов: Год, количество всех вакансий, сумму зарплат всех вакансий, количество нужных вакансий, сумму зарплат нужных вакансий, все вакансии
         """
-        pool = Pool(10)
-        vacanciesDividedByYear = pool.map(self.csv_ﬁlerAndReader, fileNames)
-        listWithSumSalaryAndCount = pool.map(self.countsNumberAndSalary, vacanciesDividedByYear)
+        pool = multiprocessing.Pool(multiprocessing.cpu_count() - 1)
+        listWithSumSalaryAndCount = pool.map(self.csv_ﬁlerAndReader, fileNames)
         return listWithSumSalaryAndCount
-
 
 class InputConnect:
     """При помощи класса можно фильтровать, сортировать, выводить таблицу
