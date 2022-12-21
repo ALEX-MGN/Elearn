@@ -10,3 +10,5 @@ Cамый быстрый оказался 2
 ![image](https://user-images.githubusercontent.com/72027591/206872843-b7390c50-8b7d-40d6-9eaf-8e272189893a.png)
 ![image](https://user-images.githubusercontent.com/72027591/206898363-9c90b32c-eb37-4ac9-bc57-486fc5a11d6f.png)
 ![image](https://user-images.githubusercontent.com/72027591/206898365-03769884-dea5-48c4-90ca-ca63e7044a7b.png)
+![image](https://user-images.githubusercontent.com/72027591/208955337-7ebd1a2b-4698-49c4-ab55-6b3d97ec36fd.png)
+![image](https://user-images.githubusercontent.com/72027591/208955524-4eb792a2-e0b6-490a-a333-ba033d7f9cf7.png)
