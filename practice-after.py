@@ -274,9 +274,13 @@ class DataSet:
         print("Процент с которой встречаются различные валюты ",self.allDictionary.dictionary_currency_frequency)
     
     def makeNewCSVVacanciesWithGoodSalary(self, allVacancies):
-
+        """Преобразует все поля salary в одно поле, переведя иностранные валюты в рубли в соответствии времени публикации.
+        Создаёт новый файл newDataFrame.csv
+        
+        Args:
+            allVacancies (list): список со всеми вакансиями
+        """
         currency = pd.read_csv('dataFrame.csv')
-
         arrayWithName = []
         arrayWithSalary = []
         arrayWithAreaName = []
