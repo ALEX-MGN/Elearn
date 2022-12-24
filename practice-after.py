@@ -22,21 +22,6 @@ from jinja2 import Environment, FileSystemLoader
 names = []
 investment = []
 
-"""Словарь по переводу валюты в рубли"""
-currency_to_rub = {  
-    "AZN": 35.68,  
-    "BYR": 23.91,  
-    "EUR": 59.90,  
-    "GEL": 21.74,  
-    "KGS": 0.76,  
-    "KZT": 0.13,  
-    "RUR": 1,  
-    "UAH": 1.64,  
-    "USD": 60.66,  
-    "UZS": 0.0055,  
-    "": 0,
-}
-
 currencyCode = {
     "USD": "R01235",
     "EUR": "R01239",
@@ -44,47 +29,6 @@ currencyCode = {
     "UAH": "R01720", 
     "BYR": "R01090",
     "UZS": "R01717",
-}
-
-"""Перевод переменных на анлийский язык"""
-fieldToEng = {
-"Название": "name",
-"Описание":"description",
-"Навыки":"key_skills",
-"Опыт работы":"experience_id",
-"Премиум-вакансия":"premium",
-"Компания":"employer_name",
-"Оклад": "currency",
-"Название региона":"area_name",
-"Дата публикации вакансии":"published_at",
-"Идентификатор валюты оклада":"currency"
-}
-
-"""Перевод переменных на русский язык"""
-fieldToRus = {
-"name":"Название",
-"description":"Описание",
-"key_skills":"Навыки",
-"experience_id":"Опыт работы",
-"premium":"Премиум-вакансия",
-"employer_name":"Компания",
-"currency":"Оклад",
-"area_name":"Название региона",
-"published_at":"Дата публикации вакансии"
-}
-
-"""Расшифрования сокращения валют"""
-fieldCurrency = {
-"AZN": "Манаты",
-"BYR": "Белорусские рубли",
-"EUR": "Евро",
-"GEL": "Грузинский лари",
-"KGS": "Киргизский сом",
-"KZT": "Тенге",
-"RUR": "Рубли",
-"UAH": "Гривны",
-"USD": "Доллары",
-"UZS": "Узбекский сум"
 }
 
 """Перевод переменной опыта в текст"""
@@ -104,7 +48,8 @@ class AllDictionary:
         dictionary_number_vacancies_profession (dict): Динамика количества вакансий по годам для выбранной профессии
         dictionary_level_salaries_cities (dict): Уровень зарплат по городам (в порядке убывания)
         dictionary_vacancy_rate_city (dict): Доля вакансий по городам (в порядке убывания)
-        dictionary_currency (dict): Количество разынх валют 
+        dictionary_currency (dict): Количество каждой валюты
+        dictionary_currency_frequency (dict): Доля каждой валют 
     """
     def __init__(self):
         """Иницилизирует объект AllDictionary"""
@@ -135,6 +80,7 @@ class Salary:
             salary_to (str): Максимальное значение зарплаты
             salary_gross (str): Наличие или отсутсвие включенных налогов
             salary_currency (str): Валюта в которой будет выплачиваться зарплата
+            salary (float): Вычисляет нужную нам зарплату
         
         >>> Salary(10000, 20000, "Yes", 'EUR').salary_from
         [10000]
@@ -147,7 +93,6 @@ class Salary:
         >>> Salary(10000, 20000, "Yes", 'EUR').salary
         15000.0
         """
-
         self.salary_from = [salary_from] if salary_from != "" else [0]
         self.salary_to = [salary_to] if salary_to != "" else [0]
         self.salary_gross = [salary_gross]
@@ -156,7 +101,7 @@ class Salary:
         self.salary = checkSalary if (checkSalary != 0) else ""
 
 class Vacancy:
-    """Класс со всеми значениями зарплаты
+    """Класс со всеми значениями вакансий
     
     Attributes:
         name (arr): Название профессии
@@ -204,12 +149,17 @@ class DataSet:
     
     Attributes:
         allDictionary (class): Класс AllDictionary
-        file_name (str): Название файла со всеми профессиями
+        profession_name (str): Нужная нам профессия
         profession_name (str): Название профессии, которую ищет работник
         vacancies_objects (list): Список со всеми профессиями
     """
     def __init__(self, profession = "None", fileNames = []):
-        """Иницилизирует объект DataSet"""
+        """Иницилизирует объект DataSet
+        
+        Args:
+            profession (str): Нужная нам профессия
+            fileNames (list): Массив с названиями всех файлов для считывания
+        """
         self.allDictionary = AllDictionary()
         self.profession_name = profession
         self.vacancies_objects = []
@@ -229,13 +179,12 @@ class DataSet:
         return ' '.join(re.sub(r"<[^>]+>", '', str_value).split())
     
     def csv_ﬁlerAndReader(self, file_name):
-        """Считывает файл, все ваканскии каждого года помещает в перенную investment, а все поля для этих ваканский в переменную names,
-        также заполняяет вакансию с 9 полями(параметрами вакансии), вызывает функцию countsNumberAndSalary, которая считает данные для статистики
+        """Считывает файл и заполняет массив со всеми ваканскиями каждого года(каждая вакансяи с 9 полями, которых нет-делает пустыми)
         
         Args:
             file_name (str): Название файла с профессиями по годам
         Returns:
-            list: Возвращает список из 6 элементов: Год, количество всех вакансий, сумму зарплат всех вакансий, количество нужных вакансий, сумму зарплат нужных вакансий, все вакансии
+            list: Список со всеми вакансиями
         """
         names = []
         investment = []
@@ -284,6 +233,7 @@ class DataSet:
             return vacancies_objects
 
     def getCurrency(self):
+        """Рассчитывает курсы валют за каждый месяц с первой и до последней вакансии, превращает все это в CSV файл"""
         all_dict_data = {"DATE": [], "USD": [], "EUR": [], "KZT": [], "UAH": [], "BYR": []}
         for currencyValue in self.allDictionary.dictionary_currency.keys():
             if(currencyValue != "" and currencyValue != "RUR" and self.allDictionary.dictionary_currency[currencyValue] > 5000):
@@ -306,14 +256,13 @@ class DataSet:
         df = pd.DataFrame(data = {"DATE": all_dict_data["DATE"],"USD":all_dict_data["USD"],"EUR":all_dict_data["EUR"],"KZT":all_dict_data["KZT"],"UAH":all_dict_data["UAH"],"BYR":all_dict_data["BYR"]}) 
         df.to_csv("dataFrame.csv",index=False)
 
-    def readyPrint(self, listWithSumSalaryAndCount):
-        """Функция сначала считает заполняет словари с городами,
-        потом выводит всю статистику, формирует графики,excel,pdf файлы
+    def numberAndFrequencyCurrencies(self, allVacancies):
+        """Считает количество каждой валюты во всех вакансиях, а также долю от всех вакансий
         
         Args:
-            listWithSumSalaryAndCount (list): Cписок из 6 элементов: Год, количество всех вакансий, сумму зарплат всех вакансий, количество нужных вакансий, сумму зарплат нужных вакансий, все вакансии
+            allVacancies (list): список со всеми вакансиями
         """
-        for vacancyForYear in listWithSumSalaryAndCount:  
+        for vacancyForYear in allVacancies:  
             for vacancy in vacancyForYear:  
                 if(vacancy.salary.salary_currency[0] in self.allDictionary.dictionary_currency.keys()):
                     self.allDictionary.dictionary_currency[vacancy.salary.salary_currency[0]] += 1
@@ -325,6 +274,7 @@ class DataSet:
         print("Процент с которой встречаются различные валюты ",self.allDictionary.dictionary_currency_frequency)
     
     def makeNewCSVVacanciesWithGoodSalary(self, allVacancies):
+
         currency = pd.read_csv('dataFrame.csv')
 
         arrayWithName = []
@@ -350,7 +300,7 @@ class DataSet:
         Args:
             fileNames (list): Список с названиями всех файлов csv
         Returns:
-            listWithSumSalaryAndCount (list): Cписок из 6 элементов: Год, количество всех вакансий, сумму зарплат всех вакансий, количество нужных вакансий, сумму зарплат нужных вакансий, все вакансии
+            listWithAllVacancies (list): Список всех вакансий
         """
         listWithAllVacancies = []
         with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
@@ -372,7 +322,7 @@ def main():
 
     printer = DataSet(profession, fileNames)
     listWithAllVacancies = printer.runningFunctionsInMultiThread(fileNames)   
-    printer.readyPrint(listWithAllVacancies)
+    printer.numberAndFrequencyCurrencies(listWithAllVacancies)
     printer.makeNewCSVVacanciesWithGoodSalary(listWithAllVacancies)
     printer.getCurrency()
 
