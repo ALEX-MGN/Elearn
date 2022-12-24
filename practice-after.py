@@ -1,7 +1,6 @@
 import csv
 import re
 import os
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd 
 import pdfkit
@@ -141,11 +140,20 @@ class Salary:
         [10000]
         >>> type(Salary(10000, 20000.0, "Yes", 'EUR')).__name__
         'Salary'
+        >>> Salary("", "", "Yes", 'EUR').salary
+        ''
+        >>> Salary("", 400.0, "Yes", 'EUR').salary
+        400.0
+        >>> Salary(10000, 20000, "Yes", 'EUR').salary
+        15000.0
         """
-        self.salary_from = [0] if salary_from == "" else [salary_from]
-        self.salary_to = [0] if salary_to == "" else [salary_to]
+
+        self.salary_from = [salary_from] if salary_from != "" else [0]
+        self.salary_to = [salary_to] if salary_to != "" else [0]
         self.salary_gross = [salary_gross]
         self.salary_currency = [salary_currency]
+        checkSalary = (((0 if self.salary_from == [0] else float(self.salary_from[0])) + (0 if self.salary_to == [0] else float(self.salary_to[0]))) / 2 if (((0 if self.salary_from == [0] else float(self.salary_from[0])) + (0 if self.salary_to == [0] else float(self.salary_to[0]))) != float(self.salary_from[0]) and ((0 if self.salary_from == [0] else float(self.salary_from[0])) + (0 if self.salary_to == [0] else float(self.salary_to[0]))) != float(self.salary_to[0])) else ((0 if self.salary_from == [0] else float(self.salary_from[0])) + (0 if self.salary_to == [0] else float(self.salary_to[0]))))
+        self.salary = checkSalary if (checkSalary != 0) else ""
 
 class Vacancy:
     """Класс со всеми значениями зарплаты
@@ -279,8 +287,7 @@ class DataSet:
         all_dict_data = {"DATE": [], "USD": [], "EUR": [], "KZT": [], "UAH": [], "BYR": []}
         for currencyValue in self.allDictionary.dictionary_currency.keys():
             if(currencyValue != "" and currencyValue != "RUR" and self.allDictionary.dictionary_currency[currencyValue] > 5000):
-                #int(self.fileNames[len(self.fileNames) - 1][10:14]) + 1
-                for year in range(int(self.fileNames[0][10:14]),2005):
+                for year in range(int(self.fileNames[0][10:14]),int(self.fileNames[len(self.fileNames) - 1][10:14]) + 1):
                     for month in range(1,13):
                         month = ("0" + str(month))[-2:]
                         for day in range(1, 29):
@@ -297,7 +304,7 @@ class DataSet:
                                 all_dict_data[currencyValue].append("-")
 
         df = pd.DataFrame(data = {"DATE": all_dict_data["DATE"],"USD":all_dict_data["USD"],"EUR":all_dict_data["EUR"],"KZT":all_dict_data["KZT"],"UAH":all_dict_data["UAH"],"BYR":all_dict_data["BYR"]}) 
-        df.to_csv("dataFrame",index=False)
+        df.to_csv("dataFrame.csv",index=False)
 
     def readyPrint(self, listWithSumSalaryAndCount):
         """Функция сначала считает заполняет словари с городами,
@@ -316,6 +323,27 @@ class DataSet:
         for item in self.allDictionary.dictionary_currency.items():
             self.allDictionary.dictionary_currency_frequency[item[0]] = round(item[1] / sum(self.allDictionary.dictionary_currency.values()), 3)
         print("Процент с которой встречаются различные валюты ",self.allDictionary.dictionary_currency_frequency)
+    
+    def makeNewCSVVacanciesWithGoodSalary(self, allVacancies):
+        currency = pd.read_csv('dataFrame.csv')
+
+        arrayWithName = []
+        arrayWithSalary = []
+        arrayWithAreaName = []
+        arrayWithPublishAt = []
+        for vacancyForYear in allVacancies:
+            for vacancy in vacancyForYear:
+                arrayWithName.append(vacancy.name[0])
+                if(vacancy.salary.salary_currency[0] == "RUR"):
+                    arrayWithSalary.append(vacancy.salary.salary)
+                elif(vacancy.salary.salary_currency[0] in currency.columns):
+                    arrayWithSalary.append(vacancy.salary.salary * float(currency.loc[((currency['DATE'])) == (vacancy.published_at[0][0:7])][vacancy.salary.salary_currency[0]]))
+                else:
+                    arrayWithSalary.append("")
+                arrayWithAreaName.append(vacancy.area_name[0])
+                arrayWithPublishAt.append(vacancy.published_at[0])
+        df = pd.DataFrame(data = {'name': arrayWithName, 'salary': arrayWithSalary, 'area_name': arrayWithAreaName, 'published_at': arrayWithPublishAt})
+        df.to_csv('newDataFrame.csv', index=False)
 
     def runningFunctionsInMultiThread(self, fileNames):
         """Функция запускает другие функции в многопотоке
@@ -324,12 +352,12 @@ class DataSet:
         Returns:
             listWithSumSalaryAndCount (list): Cписок из 6 элементов: Год, количество всех вакансий, сумму зарплат всех вакансий, количество нужных вакансий, сумму зарплат нужных вакансий, все вакансии
         """
-        aallVacancies = []
+        listWithAllVacancies = []
         with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
             futures = {executor.submit(self.csv_ﬁlerAndReader, fileName): fileName for fileName in fileNames}
             for fut in concurrent.futures.as_completed(futures):
-                aallVacancies.append(fut.result())
-        return aallVacancies
+                listWithAllVacancies.append(fut.result())
+        return listWithAllVacancies
 
 def main():
     #folderName = input("Введите название папки: ")
@@ -343,8 +371,9 @@ def main():
         break
 
     printer = DataSet(profession, fileNames)
-    listWithSumSalaryAndCount = printer.runningFunctionsInMultiThread(fileNames)   
-    printer.readyPrint(listWithSumSalaryAndCount)
+    listWithAllVacancies = printer.runningFunctionsInMultiThread(fileNames)   
+    printer.readyPrint(listWithAllVacancies)
+    printer.makeNewCSVVacanciesWithGoodSalary(listWithAllVacancies)
     printer.getCurrency()
 
 if __name__ == "__main__":
