@@ -320,9 +320,11 @@ def main():
     profession = "Программист"
     fileNames = [] 
 
+
     for (dirpath, dirnames, filenames) in walk(folderName):
         fileNames.extend(filenames)
         break
+
 
     printer = DataSet(profession, fileNames)
     listWithAllVacancies = printer.runningFunctionsInMultiThread(fileNames)   
