@@ -10,6 +10,7 @@ import multiprocessing
 import concurrent.futures
 import requests
 import xmltodict
+import sqlite3
 from os import walk
 from datetime import datetime
 from openpyxl import Workbook
@@ -254,7 +255,7 @@ class DataSet:
                                 all_dict_data[currencyValue].append("-")
 
         df = pd.DataFrame(data = {"DATE": all_dict_data["DATE"],"USD":all_dict_data["USD"],"EUR":all_dict_data["EUR"],"KZT":all_dict_data["KZT"],"UAH":all_dict_data["UAH"],"BYR":all_dict_data["BYR"]}) 
-        df.to_csv("dataFrame.csv",index=False)
+        df.to_sql('table',con = sqlite3.connect('newDataFrame.sqlite'), if_exists='replace', index=False)
 
     def numberAndFrequencyCurrencies(self, allVacancies):
         """Считает количество каждой валюты во всех вакансиях, а также долю от всех вакансий
@@ -320,11 +321,9 @@ def main():
     profession = "Программист"
     fileNames = [] 
 
-
     for (dirpath, dirnames, filenames) in walk(folderName):
         fileNames.extend(filenames)
         break
-
 
     printer = DataSet(profession, fileNames)
     listWithAllVacancies = printer.runningFunctionsInMultiThread(fileNames)   
