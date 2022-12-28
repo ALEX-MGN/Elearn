@@ -106,7 +106,7 @@ class DataSet:
         profession_name (str): Название профессии, которую ищет работник
         vacancies_objects (list): Список со всеми профессиями
     """
-    def __init__(self, profession = "None", fileNames = []):
+    def __init__(self, profession = "None", fileNames = [], areaName = "None"):
         """Иницилизирует объект DataSet
         
         Args:
@@ -115,7 +115,8 @@ class DataSet:
         """
         self.allDictionary = AllDictionary()
         self.profession_name = profession
-        self.report = Report(self.profession_name)
+        self.areaName = areaName
+        self.report = Report(self.profession_name, self.areaName)
         self.vacancies_objects = []
         self.fileNames = fileNames
 
@@ -230,7 +231,7 @@ class DataSet:
         sumAverageSalaryForProfession = 0
         for vacancie in list(everyYear.values())[0]:
             sumAverageSalary += float(vacancie.salary)
-            if(self.profession_name in vacancie.name[0]):
+            if(self.profession_name in vacancie.name[0] and self.areaName in vacancie.area_name[0]):
                 countAverageSalaryForProfession += 1
                 sumAverageSalaryForProfession += float(vacancie.salary)
         return [list(everyYear.keys())[0],len(list(everyYear.values())[0]), sumAverageSalary, countAverageSalaryForProfession, sumAverageSalaryForProfession, list(everyYear.values())[0]]   
@@ -246,41 +247,58 @@ class DataSet:
             self.vacancies_objects += statisticForYear[5]
             if(statisticForYear[0] in self.allDictionary.dictionary_salary_levels):
                 #1 заполнения словаря Динамика уровня зарплат по годам
-                self.allDictionary.dictionary_salary_levels[statisticForYear[0]] += int(statisticForYear[2] / statisticForYear[1])
+                self.allDictionary.dictionary_salary_levels[statisticForYear[0]] += int(statisticForYear[2] / statisticForYear[1]) if statisticForYear[1] != 0 else 0
                 self.report.dictionary_salary_levels = self.allDictionary.dictionary_salary_levels
                 #2 заполнения словаря Динамика количества вакансий по годам
                 self.allDictionary.dictionary_number_vacancies[statisticForYear[0]] += statisticForYear[1]
                 self.report.dictionary_number_vacancies = self.allDictionary.dictionary_number_vacancies
                 #3 заполнения словаря Динамика уровня зарплат по годам для выбранной профессии
-                self.allDictionary.dictionary_salary_levels_profession[statisticForYear[0]] += int(statisticForYear[4] / statisticForYear[3])
+                self.allDictionary.dictionary_salary_levels_profession[statisticForYear[0]] += int(statisticForYear[4] / statisticForYear[3]) if statisticForYear[3] != 0 else 0
                 self.report.dictionary_salary_levels_profession = self.allDictionary.dictionary_salary_levels_profession
                 #4 заполнения словаря Динамика количества вакансий по годам для выбранной профессии
                 self.allDictionary.dictionary_number_vacancies_profession[statisticForYear[0]] += statisticForYear[3]
                 self.report.dictionary_number_vacancies_profession = self.allDictionary.dictionary_number_vacancies_profession
             else:
                 #1 заполнения словаря Динамика уровня зарплат по годам
-                self.allDictionary.dictionary_salary_levels[statisticForYear[0]] = int(statisticForYear[2] / statisticForYear[1])
+                self.allDictionary.dictionary_salary_levels[statisticForYear[0]] = int(statisticForYear[2] / statisticForYear[1]) if statisticForYear[1] != 0 else 0
                 self.report.dictionary_salary_levels = self.allDictionary.dictionary_salary_levels
                 #2 заполнения словаря Динамика количества вакансий по годам
                 self.allDictionary.dictionary_number_vacancies[statisticForYear[0]] = statisticForYear[1]
                 self.report.dictionary_number_vacancies = self.allDictionary.dictionary_number_vacancies
                 #3 заполнения словаря Динамика уровня зарплат по годам для выбранной профессии
-                self.allDictionary.dictionary_salary_levels_profession[statisticForYear[0]] = int(statisticForYear[4] / statisticForYear[3])
+                self.allDictionary.dictionary_salary_levels_profession[statisticForYear[0]] = int(statisticForYear[4] / statisticForYear[3]) if statisticForYear[3] != 0 else 0
                 self.report.dictionary_salary_levels_profession = self.allDictionary.dictionary_salary_levels_profession
                 #4 заполнения словаря Динамика количества вакансий по годам для выбранной профессии
                 self.allDictionary.dictionary_number_vacancies_profession[statisticForYear[0]] = statisticForYear[3]
                 self.report.dictionary_number_vacancies_profession = self.allDictionary.dictionary_number_vacancies_profession
 
-        print("Динамика уровня зарплат по годам: ",end="")
-        self.report.dictionary_salary_levels = self.allDictionary.dictionary_salary_levels = dict(sorted(self.allDictionary.dictionary_salary_levels.items(), key=lambda x: x[0]))
-        print(self.allDictionary.dictionary_salary_levels)
-        print("Динамика количества вакансий по годам: ",end="")
-        self.report.dictionary_number_vacancies = self.allDictionary.dictionary_number_vacancies = dict(sorted(self.allDictionary.dictionary_number_vacancies.items(), key=lambda x: x[0]))
-        print(self.allDictionary.dictionary_number_vacancies)
-        print("Динамика уровня зарплат по годам для выбранной профессии: ",end="")
+        for vacancie in self.vacancies_objects:
+            #заполнения словаря с средней зарплатой по городам
+            if (vacancie.area_name[0] in self.allDictionary.dictionary_level_salaries_cities.keys()):
+                count = int(self.allDictionary.dictionary_level_salaries_cities[vacancie.area_name[0]].split(" ")[0]) + 1
+                money = float(self.allDictionary.dictionary_level_salaries_cities[vacancie.area_name[0]].split(" ")[1]) + float(vacancie.salary) 
+                self.allDictionary.dictionary_level_salaries_cities[vacancie.area_name[0]] = str(count) + " " + str(money)  
+            else:
+                self.allDictionary.dictionary_level_salaries_cities[vacancie.area_name[0]] = "1" + " " + vacancie.salary
+            #заполнения словаря: доля ваканский каждого города относительно всех вакансий
+            if (vacancie.area_name[0] in self.allDictionary.dictionary_vacancy_rate_city.keys()):
+                self.allDictionary.dictionary_vacancy_rate_city[vacancie.area_name[0]] += 1
+            else:
+                self.allDictionary.dictionary_vacancy_rate_city[vacancie.area_name[0]] = 1
+        self.calculating_average_salary()
+
+        print("Уровень зарплат по городам (в порядке убывания): ",end="")
+        self.dictionary_level_salaries_cities = dict(sorted(filter(lambda x: self.allDictionary.dictionary_vacancy_rate_city[x[0]] >= 0.01, self.allDictionary.dictionary_level_salaries_cities.items()), key=lambda item: item[1], reverse=True)[:10])
+        self.report.dictionary_level_salaries_cities = self.dictionary_level_salaries_cities
+        print(self.dictionary_level_salaries_cities)
+        print("Доля вакансий по городам (в порядке убывания): ",end="")
+        self.dictionary_vacancy_rate_city = dict(sorted(filter(lambda x: self.allDictionary.dictionary_vacancy_rate_city[x[0]] >= 0.01, self.allDictionary.dictionary_vacancy_rate_city.items()), key=lambda item: item[1], reverse=True)[:10])
+        self.report.dictionary_vacancy_rate_city = self.dictionary_vacancy_rate_city
+        print(self.dictionary_vacancy_rate_city)
+        print("Динамика уровня зарплат по годам для выбранной профессии и региона: ",end="")
         self.report.dictionary_salary_levels_profession = self.allDictionary.dictionary_salary_levels_profession = dict(sorted(self.allDictionary.dictionary_salary_levels_profession.items(), key=lambda x: x[0]))
         print(self.allDictionary.dictionary_salary_levels_profession)
-        print("Динамика количества вакансий по годам для выбранной профессии: ",end="")
+        print("Динамика количества вакансий по годам для выбранной профессии и региона: ",end="")
         self.report.dictionary_number_vacancies_profession = self.allDictionary.dictionary_number_vacancies_profession = dict(sorted(self.allDictionary.dictionary_number_vacancies_profession.items(), key=lambda x: x[0]))
         print(self.allDictionary.dictionary_number_vacancies_profession)  
         
@@ -303,12 +321,12 @@ class Report:
     Attributes:
         dictionary_salary_levels (dict): Динамика уровня зарплат по годам
         dictionary_number_vacancies (dict): Динамика количества вакансий по годам
-        dictionary_salary_levels_profession (dict): Динамика уровня зарплат по годам для выбранной профессии
-        dictionary_number_vacancies_profession (dict): Динамика количества вакансий по годам для выбранной профессии
+        dictionary_salary_levels_profession (dict): Динамика уровня зарплат по годам для выбранной профессии и региона
+        dictionary_number_vacancies_profession (dict): Динамика количества вакансий по годам для выбранной профессии и региона
         dictionary_level_salaries_cities (dict): Уровень зарплат по городам (в порядке убывания)
         dictionary_vacancy_rate_city (dict): Доля вакансий по городам (в порядке убывания)
     """
-    def __init__(self, profession):
+    def __init__(self, profession, region):
         self.dictionary_salary_levels = {}
         self.dictionary_number_vacancies = {}
         self.dictionary_salary_levels_profession = {}
@@ -316,40 +334,30 @@ class Report:
         self.dictionary_level_salaries_cities = {}
         self.dictionary_vacancy_rate_city = {}
         self.profession = profession
+        self.areaName = region
 
     def generate_graphics(self):
         """Генерация всех графиков в картинку при помоще библиотеки matplotlib"""
         plt.rcParams.update({'font.size': 8})
-        #1 ГРАФИК
-        labelsLevel = self.dictionary_salary_levels.keys()
-        middle_salary = self.dictionary_salary_levels.values()
-        middle_salary_profession = self.dictionary_salary_levels_profession.values()
+        #3 ГРАФИК
+        ax = plt.subplot(223)
+        ax.set_title('Уровень зарплат по городам')
+        plt.rcParams.update({'font.size': 6})
+        city = self.dictionary_level_salaries_cities.keys()
+        y_pos = np.arange(len(city))
+        performance = self.dictionary_level_salaries_cities.values()
 
-        x = np.arange(len(labelsLevel))  
-        width = 0.35 
+        ax.barh(y_pos, performance,  align = 'center')
+        ax.set_yticks(y_pos, labels = city)
+        ax.invert_yaxis() 
+        plt.grid(axis='x')
 
-        ax = plt.subplot(221)
-        ax.bar(x - width/2, middle_salary, width, label='средняя з/п')
-        ax.bar(x + width/2, middle_salary_profession, width, label='з/п ' + self.profession)
-        ax.set_title('Уровень зарплат по годам')
-        ax.set_xticks(x, labelsLevel, rotation = 90)
-        plt.grid(axis='y')
-        ax.legend()
-        #2 ГРАФИК
-        labelsCount = self.dictionary_number_vacancies.keys()
-        middle_count = self.dictionary_number_vacancies.values()
-        middle_count_profession = self.dictionary_number_vacancies_profession.values()
-
-        x = np.arange(len(labelsCount))  
-        width = 0.35 
-
-        ax = plt.subplot(222)
-        ax.bar(x - width/2, middle_count, width, label='Количества вакансий')
-        ax.bar(x + width/2, middle_count_profession, width, label='Количества вакансий \n' + self.profession)
-        ax.set_title('Количество вакансий по годам')
-        ax.set_xticks(x, labelsCount, rotation = 90)
-        plt.grid(axis='y')
-        ax.legend()
+        #4 ГРАФИК   
+        ax = plt.subplot(224)
+        plt.rcParams.update({'font.size': 8})
+        ax.set_title('Доля вакансий по городам')
+        plt.rcParams.update({'font.size': 6})
+        ax.pie(list(self.dictionary_vacancy_rate_city.values()) + [1 - sum(self.dictionary_vacancy_rate_city.values())], labels = list(self.dictionary_vacancy_rate_city.keys()) + ["Другие"])
 
         plt.subplots_adjust(wspace = 0.5, hspace = 0.5)
         plt.savefig("Graphics", dpi = 200, bbox_inches='tight')
@@ -442,12 +450,15 @@ class Report:
         """Создаёт таблицу для HTML кода
         
         >>> profession = "Программист"
-        >>> Report(profession).generate_table()
-        "<table class='main_table'><tr><th>Год</th><th>Средняя зарплата</th><th>Средняя зарплата - Программист</th><th>Количество вакансий</th><th>Количество вакансий - Программист</th></tr></tr></table>"
+        >>> areaName = "Екатеринбург"
+        >>> Report(profession, areaName).generate_table()
+        "<table class='main_table'><tr><th>Год</th><th>Средняя зарплата - Программист</th><th>Количество вакансий - Программист</th><th>Средняя зарпалата - Программист г.Екатеринбург</th><th>Количество вакансий - Программист г.Екатеринбург</th></tr></table>"
         """
         #1 ТАБЛИЦА
-        readyHtmlTable = "<table class='main_table'><tr><th>Год</th><th>Средняя зарплата</th><th>Средняя зарплата - "
-        readyHtmlTable += self.profession + "</th><th>Количество вакансий</th><th>Количество вакансий - " + self.profession + "</th></tr>"
+        readyHtmlTable = "<table class='main_table'><tr><th>Год</th><th>Средняя зарплата - " + self.profession + "</th>"
+        readyHtmlTable += "<th>Количество вакансий - " + self.profession + "</th>"
+        readyHtmlTable += "<th>Средняя зарпалата - " + self.profession + " г." + self.areaName + "</th>"
+        readyHtmlTable += "<th>Количество вакансий - " + self.profession + " г." + self.areaName + "</th>"
         for index in range(len(list(self.dictionary_salary_levels.keys()))):
             readyHtmlTable += "<tr>"
             readyHtmlTable += ("<td>" + str(list(self.dictionary_salary_levels.keys())[index]) + "</td>")
@@ -461,11 +472,14 @@ class Report:
 
 def main():
     #folderName = input("Введите название папки: ")
-    fileName = input("Введите название файла: ")
-    profession = input("Введите название профессии: ")
+    #fileName = input("Введите название файла: ")
+    #profession = input("Введите название профессии: ")
+    #region = input("Введите название региона: ")
+    
     folderName = "newCSV"
-    #fileName = "newDataFrame.csv"
-    #profession = "Программист"
+    fileName = "newDataFrame.csv"
+    profession = "Программист"
+    region = "Екатеринбург"
     
     fileNames = [] 
 
@@ -474,7 +488,7 @@ def main():
         fileNames.extend(filenames)
         break
 
-    printer = DataSet(profession, fileNames)
+    printer = DataSet(profession, fileNames, region)
     printer.splitFileByYear(fileName)
     listWithSumSalaryAndCount = printer.runningFunctionsInMultiThread(fileNames)   
     printer.readyPrint(listWithSumSalaryAndCount)
