@@ -255,7 +255,7 @@ class DataSet:
                                 all_dict_data[currencyValue].append("-")
 
         df = pd.DataFrame(data = {"DATE": all_dict_data["DATE"],"USD":all_dict_data["USD"],"EUR":all_dict_data["EUR"],"KZT":all_dict_data["KZT"],"UAH":all_dict_data["UAH"],"BYR":all_dict_data["BYR"]}) 
-        df.to_sql('table',con = sqlite3.connect('newDataFrame.sqlite'), if_exists='replace', index=False)
+        df.to_sql('myTable',con = sqlite3.connect('newDataFrame.sqlite'), if_exists='replace', index=False)
 
     def numberAndFrequencyCurrencies(self, allVacancies):
         """Считает количество каждой валюты во всех вакансиях, а также долю от всех вакансий
@@ -276,12 +276,12 @@ class DataSet:
     
     def makeNewCSVVacanciesWithGoodSalary(self, allVacancies):
         """Преобразует все поля salary в одно поле, переведя иностранные валюты в рубли в соответствии времени публикации.
-        Создаёт новый файл newDataFrame.csv
-        
+        Создаёт новый файл newBigDataFrame.sqlite
+        ПЕРЕВЕРЗЕВ АЛЕКСАНДР ЕВГЕНЬЕВИЧ
         Args:
             allVacancies (list): список со всеми вакансиями
         """
-        currency = pd.read_csv('dataFrame.csv')
+        currency = pd.read_sql("SELECT * from myTable", con = sqlite3.connect("newDataFrame.sqlite"))
         arrayWithName = []
         arrayWithSalary = []
         arrayWithAreaName = []
@@ -298,7 +298,7 @@ class DataSet:
                 arrayWithAreaName.append(vacancy.area_name[0])
                 arrayWithPublishAt.append(vacancy.published_at[0])
         df = pd.DataFrame(data = {'name': arrayWithName, 'salary': arrayWithSalary, 'area_name': arrayWithAreaName, 'published_at': arrayWithPublishAt})
-        df.to_csv('newDataFrame.csv', index=False)
+        df.to_sql('myTable',con = sqlite3.connect('newBigDataFrame.sqlite'), if_exists='replace', index=False)
 
     def runningFunctionsInMultiThread(self, fileNames):
         """Функция запускает другие функции в многопотоке
@@ -328,8 +328,9 @@ def main():
     printer = DataSet(profession, fileNames)
     listWithAllVacancies = printer.runningFunctionsInMultiThread(fileNames)   
     printer.numberAndFrequencyCurrencies(listWithAllVacancies)
-    printer.makeNewCSVVacanciesWithGoodSalary(listWithAllVacancies)
     printer.getCurrency()
+    printer.makeNewCSVVacanciesWithGoodSalary(listWithAllVacancies)
+    
 
 if __name__ == "__main__":
     doctest.testmod()
